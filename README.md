@@ -33,8 +33,8 @@ Users should be able to:
 
 ### Links
 
-- Solution URL: [Add solution URL here](https://your-solution-url.com)
-- Live Site URL: [Add live site URL here](https://your-live-site-url.com)
+- Solution URL: [Add solution URL here](https://github.com/SaoureT13/Product-list-with-cart-main/)
+- Live Site URL: [Add live site URL here](https://saouret13.github.io/Product-list-with-cart-main/)
 
 ### Built with
 
