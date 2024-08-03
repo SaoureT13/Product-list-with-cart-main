@@ -1,32 +1,33 @@
 import { data } from "./data.jsx";
 import "./App.css";
-import { useEffect, useState } from "react";
+import reducer from "./Hooks/useReducer.jsx";
+import { useEffect, useReducer, useState } from "react";
 import ReactDOM from "react-dom";
 
-function CartItem2({ item }) {
+function CartItem2({ image, name, count, price }) {
     return (
         <div className="flex gap-4 items-center w-full mb-2 pb-6 border-b-[1px]">
             <div
                 className="w-[50px] h-[50px] rounded-md bg-contain"
-                style={{ backgroundImage: `url(${item.image.thumbnail})` }}
+                style={{ backgroundImage: `url(${image})` }}
             ></div>
             <div className="flex justify-between items-center flex-1">
                 <div>
                     <p className="text-sm text-Rose_900 font-medium mb-2">
-                        {item.name}
+                        {name}
                     </p>
                     <div>
                         <span className="text-sm text-Red font-medium mr-6">
-                            {item.number}x
+                            {count}x
                         </span>
                         <span className="text-sm text-Rose_300 mr-2">
-                            @${item.price.toFixed(2)}
+                            @${price.toFixed(2)}
                         </span>
                     </div>
                 </div>
                 <div>
                     <span className="text-md text-Rose_900 font-medium">
-                        ${(item.price * item.number).toFixed(2)}
+                        ${(price * count).toFixed(2)}
                     </span>
                 </div>
             </div>
@@ -81,13 +82,16 @@ function Cart({ cartItem, onRemoveInCart, onOpenModal }) {
                 </h3>
                 <div className="flex-1 flex flex-col">
                     {cartItem.length > 0 ? (
-                        cartItem.map((item, i) => {
+                        cartItem.map((item) => {
+                            const matchedItem = data.find(
+                                (d) => d.name == item.name
+                            );
                             return (
                                 <CartItem
-                                    key={i}
-                                    name={item.name}
-                                    number={item.number}
-                                    price={item.price}
+                                    key={matchedItem.name}
+                                    name={matchedItem.name}
+                                    number={item.count}
+                                    price={matchedItem.price}
                                     onRemoveInCart={onRemoveInCart}
                                 />
                             );
@@ -161,10 +165,14 @@ function Cart({ cartItem, onRemoveInCart, onOpenModal }) {
                                 $
                                 {cartItem
                                     .reduce((accumulator, currentItem) => {
+                                        const matchedItem = data.find(
+                                            (d) => d.name == currentItem.name
+                                        );
+
                                         return (
                                             accumulator +
-                                            currentItem.price *
-                                                currentItem.number
+                                            matchedItem.price *
+                                                currentItem.count
                                         );
                                     }, 0)
                                     .toFixed(2)}
@@ -252,7 +260,7 @@ function Product({
                                 />
                             </svg>
                         </button>
-                        {show.number}
+                        {show.count}
                         <button
                             onClick={() => onIncrementInCart(name)}
                             className="rounded-full w-[20px] h-[20px] flex items-center justify-center border-2 border-withe hover:text-Red hover:bg-white transition duration-300 ease-in-out"
@@ -306,87 +314,40 @@ function Product({
     );
 }
 
-function ListProducts({
-    onAddInCart,
-    onIncrementInCart,
-    onDecrementInCart,
-    cartItem,
-}) {
+function ListProducts({ children }) {
     return (
         <div className="lg:w-[72%] mb-6">
             <h1 className="text-4xl font-bold">Desserts</h1>
-            <div className="mt-8 flex flex-wrap gap-6">
-                {data.map((item, i) => {
-                    return (
-                        <Product
-                            key={i}
-                            image={item.image}
-                            name={item.name}
-                            category={item.category}
-                            price={item.price}
-                            cartItem={cartItem}
-                            onAddInCart={onAddInCart}
-                            onIncrementInCart={onIncrementInCart}
-                            onDecrementInCart={onDecrementInCart}
-                        />
-                    );
-                })}
-            </div>
+            <div className="mt-8 flex flex-wrap gap-6">{children}</div>
         </div>
     );
 }
 
 function App() {
-    let [cart, setCart] = useState([]);
     let [showModal, setShowModal] = useState(false);
 
-    function handleResetCart() {
-        setCart([]);
-    }
+    const [cart, dispatch] = useReducer(reducer, []);
+
+    const handleAddItem = (itemName) => {
+        dispatch({ type: "ADD_ITEM", itemName: itemName });
+    };
+
+    const handleRemoveItem = (itemName) => {
+        dispatch({ type: "REMOVE_ITEM", itemName: itemName });
+    };
+
+    const handleIncrementItem = (itemName) => {
+        dispatch({ type: "INCREMENT_ITEM", itemName: itemName });
+    };
+
+    const handleDecrementItem = (itemName) => {
+        dispatch({ type: "DECREMENT_ITEM", itemName: itemName });
+    };
+
+    const handleResetCart = () => dispatch({ type: "RESET_CART" });
 
     function handleShowModal() {
         setShowModal((showModal = !showModal));
-    }
-
-    function handleRemoveInCart(name) {
-        let newCartContent = cart.slice();
-        newCartContent = newCartContent.filter((item) => item.name != name);
-        setCart(newCartContent);
-    }
-
-    function handleIncrementInCart(name) {
-        let newCartContent = cart.slice();
-        for (let item of newCartContent) {
-            if (item.name == name) {
-                item.number++;
-            }
-        }
-        setCart(newCartContent);
-    }
-
-    function handleDecrementInCart(name) {
-        let newCartContent = cart.slice();
-        let removeItem = false;
-        for (let item of newCartContent) {
-            if (item.name == name) {
-                item.number--;
-                removeItem = item.number == 0 ? true : false;
-            }
-        }
-        if (removeItem) {
-            newCartContent = newCartContent.filter((item) => item.name != name);
-        }
-        setCart(newCartContent);
-    }
-
-    function handleAddItemInCart(name) {
-        for (let i = 0; i < data.length; i++) {
-            if (data[i].name == name) {
-                let currentData = data[i];
-                currentData.number = 1;
-                setCart([...cart, currentData]);
-            }
-        }
     }
 
     useEffect(() => {
@@ -402,15 +363,26 @@ function App() {
     return (
         <>
             <div className="w-full flex flex-wrap gap-8 pt-8 lg:pt-16 px-6">
-                <ListProducts
-                    onAddInCart={handleAddItemInCart}
-                    onIncrementInCart={handleIncrementInCart}
-                    onDecrementInCart={handleDecrementInCart}
-                    cartItem={cart}
-                />
+                <ListProducts>
+                    {data.map((item) => {
+                        return (
+                            <Product
+                                key={item.name}
+                                image={item.image}
+                                name={item.name}
+                                category={item.category}
+                                price={item.price}
+                                cartItem={cart}
+                                onAddInCart={handleAddItem}
+                                onIncrementInCart={handleIncrementItem}
+                                onDecrementInCart={handleDecrementItem}
+                            />
+                        );
+                    })}
+                </ListProducts>
                 <Cart
                     cartItem={cart}
-                    onRemoveInCart={handleRemoveInCart}
+                    onRemoveInCart={handleRemoveItem}
                     onOpenModal={handleShowModal}
                 />
             </div>
@@ -458,9 +430,20 @@ function Modal({ isOpen, onClose, cartItem, onReset }) {
                 <p className="text-md text-Rose_400">
                     We hope you enjoy your food
                 </p>
-                <div className="my-8 bg-Rose_50 p-6 rounded-md overflow-scroll">
-                    {cartItem.map((item, i) => {
-                        return <CartItem2 key={i} item={item} />;
+                <div className="my-8 bg-Rose_50 p-6 rounded-md overflow-y-scroll">
+                    {cartItem.map((item) => {
+                        const matchedItem = data.find(
+                            (d) => d.name == item.name
+                        );
+                        return (
+                            <CartItem2
+                                key={matchedItem.name}
+                                image={matchedItem.image.thumbnail}
+                                name={matchedItem.name}
+                                count={item.count}
+                                price={matchedItem.price}
+                            />
+                        );
                     })}
 
                     <div className="flex justify-between items-center mt-6">
@@ -469,9 +452,12 @@ function Modal({ isOpen, onClose, cartItem, onReset }) {
                             $
                             {cartItem
                                 .reduce((accumulator, currentItem) => {
+                                    const matchedItem = data.find(
+                                        (d) => d.name == currentItem.name
+                                    );
                                     return (
                                         accumulator +
-                                        currentItem.price * currentItem.number
+                                        matchedItem.price * currentItem.count
                                     );
                                 }, 0)
                                 .toFixed(2)}
